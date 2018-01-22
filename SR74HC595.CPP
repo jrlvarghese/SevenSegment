@@ -9,21 +9,23 @@ class shiftReg
 		int _latchPin;
 		int _clockPin;
 		int _dataPin;
+		int _srNum; //variable for total number of shift registers in use
 		
 	public:
-		shiftReg();
+		shiftReg();	//default constructor
 		void setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin);
-	/*const int latchPin = 12;	//Pin connected to ST_CP of 74HC595 pin 12
-	const int clockPin = 8;	//Pin connected to SH_CP of 74HC595 pin 11
-	const int dataPin = 11;	//Pin connected to DS of 74HC595 pin 14*/
+		void setRegNum(uint8_t srNum);
+		~shiftReg();	//default destructor for the class
 };
-//Constructor
+//Constructor --> if the pins are not defined while initiating it will be the default pins
 shiftReg::shiftReg()
 {
-	_latchPin = 12;
-	_clockPin = 8;
-	_dataPin = 11;
+	_latchPin = 12;	//Connected to pin 12 of the ic (ST_CP)
+	_clockPin = 8;	//to pin 11 of ic (SH_CP)
+	_dataPin = 11;	//to pin 14 of ic (DATA pin)
+	_srNum = 1;	//by default total number of sr is 1
 }
+
 //Function to set the pins. This will change the default pins
 void shiftReg::setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
 {
@@ -31,5 +33,29 @@ void shiftReg::setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
 	_latchPin = latchPin;
 	_clockPin = clockPin;
 	_dataPin = dataPin;
-	return;	
 }
+//Function to set total number of shift registers
+void shiftReg::setRegNum(uint8_t srNum)
+{
+	_srNum = srNum;	
+}
+
+/*
+------------------------- END OF THE PROGRAM ----------------------------------------
+//This is similar to default function in arduino:
+//Please note default function name is shiftout
+void shiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, uint8_t val)
+{
+    uint8_t i;
+
+    for (i = 0; i < 8; i++)  {
+        if (bitOrder == LSBFIRST)
+            digitalWrite(dataPin, !!(val & (1 << i)));
+        else    
+            digitalWrite(dataPin, !!(val & (1 << (7 - i))));
+
+        digitalWrite(clockPin, HIGH);
+        digitalWrite(clockPin, LOW);        
+    }
+}
+*/
