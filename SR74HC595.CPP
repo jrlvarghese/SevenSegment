@@ -6,15 +6,16 @@ class shiftReg
 {
 	//Declare the pins
 	private:
-		int _latchPin;
-		int _clockPin;
-		int _dataPin;
-		int _srNum; //variable for total number of shift registers in use
+		uint8_t _latchPin;
+		uint8_t _clockPin;
+		uint8_t _dataPin;
+		uint8_t _srNum; //variable for total number of shift registers in use
+		uint8_t _mode;
 		
 	public:
 		shiftReg();	//default constructor
 		void setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin);
-		void setRegNum(uint8_t srNum);
+		void setReg(uint8_t srNum, uint8_t mode);
 		~shiftReg();	//default destructor for the class
 };
 //Constructor --> if the pins are not defined while initiating it will be the default pins
@@ -24,6 +25,7 @@ shiftReg::shiftReg()
 	_clockPin = 8;	//to pin 11 of ic (SH_CP)
 	_dataPin = 11;	//to pin 14 of ic (DATA pin)
 	_srNum = 1;	//by default total number of sr is 1
+	_mode = c;	//sets to common cathode mode by default
 }
 
 //Function to set the pins. This will change the default pins
@@ -35,11 +37,20 @@ void shiftReg::setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
 	_dataPin = dataPin;
 }
 //Function to set total number of shift registers
-void shiftReg::setRegNum(uint8_t srNum)
+void shiftReg::setReg(uint8_t srNum, uint8_t mode)
 {
-	_srNum = srNum;	
+	_srNum = srNum;	//sets total number of shift registers
+	_mode = mode	//sets wether common cathode (c) or anode mode (a)
 }
 
+//Function to display integer number -->
+//it takes any integer value and displays
+void shiftReg::dispInt(int num)
+{
+	
+}
+
+//Chaser which can move one bit from one end to another
 /*
 ------------------------- END OF THE PROGRAM ----------------------------------------
 //This is similar to default function in arduino:
