@@ -17,6 +17,8 @@ class shiftReg
 		shiftReg();	//default constructor
 		void setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin);
 		void setReg(uint8_t srNum, uint8_t mode, uint8_t bitOrder);
+		void bitOut(uint8_t val);	//Outputs the bits at the datapin
+		void dispInt(uint8_t val);	//displays the integer values
 		~shiftReg();	//default destructor for the class
 };
 //Constructor --> if the pins are not defined while initiating it will be the default pins
@@ -50,9 +52,50 @@ void shiftReg::setReg(uint8_t srNum, uint8_t mode, uint8_t bitOrder)
 //it takes any integer value and displays
 void shiftReg::dispInt(int num)
 {
-	
+	/*An array to store the values for the display. 
+	Inorder to get CommAnode mode  255 - CommCathode*/
+	uint8_t numArr[2][10] = {{252,96,218,242,102,182,190,224,254,246},//MSBFIRST CommCathode
+							{64,6,81,79,102,109,125,7,127,111}};//LSBFIRST CommCathode
+	if(_bitOrder == MSBFIRST)
+	{
+		if(_mode == c)//for common cathode mode 
+			bitOut_MSBF(numArr[0][num]);
+		else//for common anode mode
+			bitOut_MSBF(255 - numArr[0][num]);
+	}
+	else if(_bitOrder == LSBFIRST)
+	{
+		if(_mode == c)//for common cathode 
+			bitOut_LSBF(numArr[1][num]);
+		else	//for common anode
+			bitOut_LSBF(255 - numArr[1][num]);
+	}
 }
 
+/*Shiftout function which is customised without declaring the pins and bit order*/
+void shiftReg::bitOut_LSBF(uint8_t val)
+{
+    uint8_t i;
+
+    for(i=0; i<8; i++)
+	{
+		digitalWrite(_dataPin, !!(val & (1 << i)));
+        digitalWrite(_clockPin, HIGH);
+        digitalWrite(_clockPin, LOW);        
+    }
+}
+
+void shiftReg::bitOut_MSBF(uint8_t val)
+{
+    uint8_t i;
+
+    for(i=0; i<8; i++)
+	{
+		digitalWrite(_dataPin, !!(val & (1 << (7 - i))));
+        digitalWrite(_clockPin, HIGH);
+        digitalWrite(_clockPin, LOW);        
+    }
+}
 /*Chaser which can move one bit from one end to another.
 Will make the bits move from one end to another and again viceversa*/
 void shiftReg::chaser(uint8_t channels)
