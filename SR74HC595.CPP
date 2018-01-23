@@ -11,11 +11,12 @@ class shiftReg
 		uint8_t _dataPin;
 		uint8_t _srNum; //variable for total number of shift registers in use
 		uint8_t _mode;
+		uint8_t _bitOrder;
 		
 	public:
 		shiftReg();	//default constructor
 		void setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin);
-		void setReg(uint8_t srNum, uint8_t mode);
+		void setReg(uint8_t srNum, uint8_t mode, uint8_t bitOrder);
 		~shiftReg();	//default destructor for the class
 };
 //Constructor --> if the pins are not defined while initiating it will be the default pins
@@ -26,6 +27,7 @@ shiftReg::shiftReg()
 	_dataPin = 11;	//to pin 14 of ic (DATA pin)
 	_srNum = 1;	//by default total number of sr is 1
 	_mode = c;	//sets to common cathode mode by default
+	_bitOrder = MSBFIRST; //default bit order is MSBFIRST
 }
 
 //Function to set the pins. This will change the default pins
@@ -37,10 +39,11 @@ void shiftReg::setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
 	_dataPin = dataPin;
 }
 //Function to set total number of shift registers
-void shiftReg::setReg(uint8_t srNum, uint8_t mode)
+void shiftReg::setReg(uint8_t srNum, uint8_t mode, uint8_t bitOrder)
 {
 	_srNum = srNum;	//sets total number of shift registers
 	_mode = mode	//sets wether common cathode (c) or anode mode (a)
+	_bitOrder = bitOrder;	//sets the bit order LSBFIRST OR MSBFIRST
 }
 
 //Function to display integer number -->
@@ -50,7 +53,12 @@ void shiftReg::dispInt(int num)
 	
 }
 
-//Chaser which can move one bit from one end to another
+/*Chaser which can move one bit from one end to another.
+Will make the bits move from one end to another and again viceversa*/
+void shiftReg::chaser(uint8_t channels)
+{
+	
+}
 /*
 ------------------------- END OF THE PROGRAM ----------------------------------------
 //This is similar to default function in arduino:
