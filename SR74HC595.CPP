@@ -18,7 +18,8 @@ class shiftReg
 		void setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin);
 		void setReg(uint8_t srNum, uint8_t mode, uint8_t bitOrder);
 		void bitOut(uint8_t val);	//Outputs the bits at the datapin
-		void dispInt(uint8_t val);	//displays the integer values
+		void dispInt(int val);	//displays the integer values
+		void chaser(uint8_t channels);	//channels is the number of channels
 		~shiftReg();	//default destructor for the class
 };
 //Constructor --> if the pins are not defined while initiating it will be the default pins
@@ -97,10 +98,26 @@ void shiftReg::bitOut_MSBF(uint8_t val)
     }
 }
 /*Chaser which can move one bit from one end to another.
-Will make the bits move from one end to another and again viceversa*/
+Will make the bits move from one end to another and again start from the begining*/
 void shiftReg::chaser(uint8_t channels)
 {
-	
+	uint8_t val = 0;
+	for(uint8_t i = 0; i<channels; i++) 
+	{
+		val = (1<<i);
+		for(uint8_t j=0; j<channels; j++)
+		{
+			//cout<<!!(val&(1<<j))<<setw(7);
+			if(_bitOrder == LSBFIRST)
+			{
+				digitalWrite(_dataPin, !!(val&(1<<j)));
+			}
+			else
+			{
+				digtalWrite(_dataPin, !!(val & (1 << (channels - j))));
+			}
+		}
+	}	
 }
 /*
 ------------------------- END OF THE PROGRAM ----------------------------------------
