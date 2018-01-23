@@ -1,27 +1,9 @@
 //Make useful file to handle shift register 74HC595
-#include <iostream>
-using namespace std;
-//void setPins(uint8_t x, uint8_t y, uint8_t z);
-class shiftReg
-{
-	//Declare the pins
-	private:
-		uint8_t _latchPin;
-		uint8_t _clockPin;
-		uint8_t _dataPin;
-		uint8_t _srNum; //variable for total number of shift registers in use
-		uint8_t _mode;
-		uint8_t _bitOrder;
-		
-	public:
-		shiftReg();	//default constructor
-		void setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin);
-		void setReg(uint8_t srNum, uint8_t mode, uint8_t bitOrder);
-		void bitOut(uint8_t val);	//Outputs the bits at the datapin
-		void dispInt(int val);	//displays the integer values
-		void chaser(uint8_t channels);	//channels is the number of channels
-		~shiftReg();	//default destructor for the class
-};
+//#include <iostream>
+//using namespace std;
+#include "Arduino.h"
+#include "shiftReg.h"
+#include "HardwareSerial.h"
 //Constructor --> if the pins are not defined while initiating it will be the default pins
 shiftReg::shiftReg()
 {
@@ -29,8 +11,14 @@ shiftReg::shiftReg()
 	_clockPin = 8;	//to pin 11 of ic (SH_CP)
 	_dataPin = 11;	//to pin 14 of ic (DATA pin)
 	_srNum = 1;	//by default total number of sr is 1
-	_mode = c;	//sets to common cathode mode by default
+	_mode = 1;	//sets to common cathode mode by default
 	_bitOrder = MSBFIRST; //default bit order is MSBFIRST
+}
+
+//Destructor 
+shiftReg::~shiftReg()
+{
+	//do nothing
 }
 
 //Function to set the pins. This will change the default pins
@@ -40,83 +28,100 @@ void shiftReg::setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
 	_latchPin = latchPin;
 	_clockPin = clockPin;
 	_dataPin = dataPin;
+	pinMode(_latchPin,OUTPUT);
+	pinMode(_clockPin,OUTPUT);
+	pinMode(_dataPin,OUTPUT);
 }
-//Function to set total number of shift registers
+
+/*Function to set total number of shift registers
+srNum -- indicates total number of shift registers
+mode -- define wether common cathode or anode
+bitOrder -- MSBFIRST OR LSBFIRST*/
 void shiftReg::setReg(uint8_t srNum, uint8_t mode, uint8_t bitOrder)
 {
 	_srNum = srNum;	//sets total number of shift registers
-	_mode = mode	//sets wether common cathode (c) or anode mode (a)
+	_mode = mode;	//sets wether common cathode (c) or anode mode (a)
 	_bitOrder = bitOrder;	//sets the bit order LSBFIRST OR MSBFIRST
 }
 
-//Function to display integer number -->
-//it takes any integer value and displays
+/*Function to display integer number -->it takes any integer value and displays*/
 void shiftReg::dispInt(int num)
 {
 	/*An array to store the values for the display. 
 	Inorder to get CommAnode mode  255 - CommCathode*/
-	uint8_t numArr[2][10] = {{252,96,218,242,102,182,190,224,254,246},//MSBFIRST CommCathode
-							{64,6,81,79,102,109,125,7,127,111}};//LSBFIRST CommCathode
-	if(_bitOrder == MSBFIRST)
+	int numArr[2][10] = {{252,96,218,242,102,182,190,224,254,246},//LSBFIRST CommCathode
+							{63,6,91,79,102,109,125,7,127,111}};//MSBFIRST CommCathode*/
+	if(_bitOrder == LSBFIRST)
 	{
-		if(_mode == c)//for common cathode mode 
-			bitOut_MSBF(numArr[0][num]);
+		if(_mode == 1)//for common cathode mode 
+			bitOut_LSBF(numArr[0][num]);
 		else//for common anode mode
-			bitOut_MSBF(255 - numArr[0][num]);
+			bitOut_LSBF(255 - numArr[0][num]);
 	}
-	else if(_bitOrder == LSBFIRST)
+	else if(_bitOrder == MSBFIRST)
 	{
-		if(_mode == c)//for common cathode 
-			bitOut_LSBF(numArr[1][num]);
+		if(_mode == 1)//for common cathode 
+			bitOut_MSBF(numArr[1][num]);
 		else	//for common anode
-			bitOut_LSBF(255 - numArr[1][num]);
+			bitOut_MSBF(255 - numArr[1][num]);
 	}
 }
 
-/*Shiftout function which is customised without declaring the pins and bit order*/
-void shiftReg::bitOut_LSBF(uint8_t val)
+/*bitOut_LSBF outputs the bits in an order of LSBFIRST
+takes input and convert to 8 bit binary. Then outputs bit by bit*/
+void shiftReg::bitOut_LSBF(int val)
 {
     uint8_t i;
-
+	digitalWrite(_latchPin, LOW);
     for(i=0; i<8; i++)
 	{
 		digitalWrite(_dataPin, !!(val & (1 << i)));
         digitalWrite(_clockPin, HIGH);
         digitalWrite(_clockPin, LOW);        
     }
+	digitalWrite(_latchPin, HIGH);
 }
 
-void shiftReg::bitOut_MSBF(uint8_t val)
+void shiftReg::bitOut_MSBF(int val)
 {
     uint8_t i;
-
+	digitalWrite(_latchPin, LOW);
     for(i=0; i<8; i++)
 	{
 		digitalWrite(_dataPin, !!(val & (1 << (7 - i))));
         digitalWrite(_clockPin, HIGH);
         digitalWrite(_clockPin, LOW);        
     }
+	digitalWrite(_latchPin, HIGH);
 }
 /*Chaser which can move one bit from one end to another.
-Will make the bits move from one end to another and again start from the begining*/
-void shiftReg::chaser(uint8_t channels)
+Will make the bits move from one end to another and again start from the begining
+Takes input as total number of channels depending on the number of channels required*/
+void shiftReg::chaser(int channels)
 {
 	uint8_t val = 0;
 	for(uint8_t i = 0; i<channels; i++) 
 	{
 		val = (1<<i);
+		digitalWrite(_latchPin, LOW);
 		for(uint8_t j=0; j<channels; j++)
 		{
 			//cout<<!!(val&(1<<j))<<setw(7);
 			if(_bitOrder == LSBFIRST)
 			{
 				digitalWrite(_dataPin, !!(val&(1<<j)));
+				digitalWrite(_clockPin, HIGH);
+				digitalWrite(_clockPin, LOW);
 			}
 			else
 			{
-				digtalWrite(_dataPin, !!(val & (1 << (channels - j))));
+				digitalWrite(_dataPin, !!(val & (1 << (channels - j))));
+				digitalWrite(_clockPin, HIGH);
+				digitalWrite(_clockPin, LOW);
 			}
 		}
+		digitalWrite(_latchPin, HIGH);
+		delay(500);
 	}	
 }
 /*
