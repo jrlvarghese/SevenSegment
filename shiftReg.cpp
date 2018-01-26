@@ -4,6 +4,8 @@
 #include "Arduino.h"
 #include "shiftReg.h"
 #include "HardwareSerial.h"
+#define CC 1
+#define CA 0
 //Constructor --> if the pins are not defined while initiating it will be the default pins
 shiftReg::shiftReg()
 {
@@ -11,7 +13,7 @@ shiftReg::shiftReg()
 	_clockPin = 8;	//to pin 11 of ic (SH_CP)
 	_dataPin = 11;	//to pin 14 of ic (DATA pin)
 	_srNum = 1;	//by default total number of sr is 1
-	_mode = 1;	//sets to common cathode mode by default
+	_mode = CC;	//sets to common cathode mode by default
 	_bitOrder = MSBFIRST; //default bit order is MSBFIRST
 }
 
@@ -37,13 +39,20 @@ void shiftReg::setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
 srNum -- indicates total number of shift registers
 mode -- define wether common cathode or anode
 bitOrder -- MSBFIRST OR LSBFIRST*/
-void shiftReg::setReg(uint8_t srNum, uint8_t mode, uint8_t bitOrder)
+void shiftReg::setReg(uint8_t srNum, uint8_t bitOrder)
 {
 	_srNum = srNum;	//sets total number of shift registers
-	_mode = mode;	//sets wether common cathode (c) or anode mode (a)
 	_bitOrder = bitOrder;	//sets the bit order LSBFIRST OR MSBFIRST
 }
-
+/*Functions to set register mode wether common cathode or anode*/
+void shiftReg::commonCathode()
+{
+	_mode = CC;
+}
+void shiftReg::commonAnode()
+{
+	_mode = CA;
+}
 /*Function to display integer number -->it takes any integer value and displays*/
 void shiftReg::dispInt(int num)
 {
@@ -53,14 +62,14 @@ void shiftReg::dispInt(int num)
 							{63,6,91,79,102,109,125,7,127,111}};//MSBFIRST CommCathode*/
 	if(_bitOrder == LSBFIRST)
 	{
-		if(_mode == 1)//for common cathode mode 
+		if(_mode)//for common cathode mode 
 			bitOut_LSBF(numArr[0][num]);
 		else//for common anode mode
 			bitOut_LSBF(255 - numArr[0][num]);
 	}
 	else if(_bitOrder == MSBFIRST)
 	{
-		if(_mode == 1)//for common cathode 
+		if(_mode)//for common cathode 
 			bitOut_MSBF(numArr[1][num]);
 		else	//for common anode
 			bitOut_MSBF(255 - numArr[1][num]);
@@ -97,31 +106,30 @@ void shiftReg::bitOut_MSBF(int val)
 /*Chaser which can move one bit from one end to another.
 Will make the bits move from one end to another and again start from the begining
 Takes input as total number of channels depending on the number of channels required*/
-void shiftReg::chaser(int channels)
+void shiftReg::chaser(int channels, int speed)
 {
-	uint8_t val = 0;
+	uint8_t val = 1;
 	for(uint8_t i = 0; i<channels; i++) 
 	{
-		val = (1<<i);
 		digitalWrite(_latchPin, LOW);
-		for(uint8_t j=0; j<channels; j++)
+		for(uint8_t j=0; j<(8*_srNum); j++)
 		{
 			//cout<<!!(val&(1<<j))<<setw(7);
 			if(_bitOrder == LSBFIRST)
 			{
-				digitalWrite(_dataPin, !!(val&(1<<j)));
+				digitalWrite(_dataPin, !!((val<<i)&(1<<j)));
 				digitalWrite(_clockPin, HIGH);
 				digitalWrite(_clockPin, LOW);
 			}
 			else
 			{
-				digitalWrite(_dataPin, !!(val & (1 << (channels - j))));
+				digitalWrite(_dataPin, !!((val<<i) & (1 << (channels - j))));
 				digitalWrite(_clockPin, HIGH);
 				digitalWrite(_clockPin, LOW);
 			}
 		}
 		digitalWrite(_latchPin, HIGH);
-		delay(500);
+		delay(speed);
 	}	
 }
 /*

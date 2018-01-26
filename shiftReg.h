@@ -14,11 +14,13 @@ class shiftReg
 	public:
 		shiftReg();	//default constructor
 		void setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin);
-		void setReg(uint8_t srNum, uint8_t mode, uint8_t bitOrder);
+		void setReg(uint8_t srNum, uint8_t bitOrder);
+		void commonCathode();
+		void commonAnode();	//sets the register ouputs for a common anode display
 		void bitOut_MSBF(int val);	//Outputs the bits at the datapin
 		void bitOut_LSBF(int val);
 		void dispInt(int val);	//displays the integer values
-		void chaser(int channels);	//channels is the number of channels
+		void chaser(int channels, int speed);	//channels is the number of channels
 		~shiftReg();	//default destructor for the class
 };
 #endif
