@@ -117,13 +117,20 @@ void shiftReg::chaser(int channels, int speed)
 			//cout<<!!(val&(1<<j))<<setw(7);
 			if(_bitOrder == LSBFIRST)
 			{
-				digitalWrite(_dataPin, !!((val<<i)&(1<<j)));
+				if(_mode)
+					digitalWrite(_dataPin, !!((val<<i)&(1<<j)));
+				else
+					digitalWrite(_dataPin, !((val<<i)&(1<<j)));
+				
 				digitalWrite(_clockPin, HIGH);
 				digitalWrite(_clockPin, LOW);
 			}
 			else
 			{
-				digitalWrite(_dataPin, !!((val<<i) & (1 << (channels - j))));
+				if(_mode)
+					digitalWrite(_dataPin, !!((val<<i) & (1 << (channels - j))));
+				else
+					digitalWrite(_dataPin, !((val<<i) & (1 << (channels - j))));
 				digitalWrite(_clockPin, HIGH);
 				digitalWrite(_clockPin, LOW);
 			}
