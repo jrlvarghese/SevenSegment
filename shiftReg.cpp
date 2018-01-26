@@ -60,20 +60,44 @@ void shiftReg::dispInt(int num)
 	Inorder to get CommAnode mode  255 - CommCathode*/
 	int numArr[2][10] = {{252,96,218,242,102,182,190,224,254,246},//LSBFIRST CommCathode
 							{63,6,91,79,102,109,125,7,127,111}};//MSBFIRST CommCathode*/
-	if(_bitOrder == LSBFIRST)
+	uint8_t digit = 1;//sets the value of digit to either of these values
+	if(num<10)
+		digit = 1;
+	else if(num<100)
+		digit = 2;
+	else if(num<1000)
+		digit = 3;
+	else if(num<10000)
+		digit = 4;
+	else if(num<100000)
+		digit = 5;
+	digitalWrite(_latchPin, LOW);	//Pull the latchpin to low for the bits to be write
+	switch(digit)
 	{
-		if(_mode)//for common cathode mode 
-			bitOut_LSBF(numArr[0][num]);
-		else//for common anode mode
-			bitOut_LSBF(255 - numArr[0][num]);
+		case 1:
+			if(_bitOrder == LSBFIRST)
+			{
+				bitOut_LSBF(numArr[0][num]);//Takes the value from the above mentioned array
+			}
+			else if(_bitOrder == MSBFIRST)
+			{
+				bitOut_MSBF(numArr[1][num]);
+			}
+			break;
+		case 2:
+			if(bitOrder == LSBFIRST)
+			{
+				bitOut_LSBF(numArr[0][num/10]);//First number
+				bitOut_LDBF(numArr[0][num%10]);//Second number
+			}
+			else
+			{
+				bitOut_MSBF(numArr[1][num/10]);
+				bitOut_MSBF(numArr[1][num%10]);
+			}
 	}
-	else if(_bitOrder == MSBFIRST)
-	{
-		if(_mode)//for common cathode 
-			bitOut_MSBF(numArr[1][num]);
-		else	//for common anode
-			bitOut_MSBF(255 - numArr[1][num]);
-	}
+	digitalWrite(_latchPin, HIGH);//Enable the latchPin once all the numbers have been wrote
+	
 }
 
 /*bitOut_LSBF outputs the bits in an order of LSBFIRST
@@ -84,20 +108,24 @@ void shiftReg::bitOut_LSBF(int val)
 	digitalWrite(_latchPin, LOW);
     for(i=0; i<8; i++)
 	{
-		digitalWrite(_dataPin, !!(val & (1 << i)));
+		if(_mode)
+			digitalWrite(_dataPin, !!(val & (1 << i)));
+		else
+			digitalWrite(_dataPin, !(val & (1 << i)));			
         digitalWrite(_clockPin, HIGH);
         digitalWrite(_clockPin, LOW);        
     }
-	digitalWrite(_latchPin, HIGH);
 }
 
 void shiftReg::bitOut_MSBF(int val)
 {
     uint8_t i;
-	digitalWrite(_latchPin, LOW);
     for(i=0; i<8; i++)
 	{
-		digitalWrite(_dataPin, !!(val & (1 << (7 - i))));
+		if(_mode)
+			digitalWrite(_dataPin, !!(val & (1 << (7 - i))));
+		else
+			digitalWrite(_dataPin, !(val & (1 << (7 - i))));
         digitalWrite(_clockPin, HIGH);
         digitalWrite(_clockPin, LOW);        
     }
@@ -118,9 +146,9 @@ void shiftReg::chaser(int channels, int speed)
 			if(_bitOrder == LSBFIRST)
 			{
 				if(_mode)
-					digitalWrite(_dataPin, !!((val<<i)&(1<<j)));
+					digitalWrite(_dataPin, !!((val<<i)&(1<<(j%8))));
 				else
-					digitalWrite(_dataPin, !((val<<i)&(1<<j)));
+					digitalWrite(_dataPin, !((val<<i)&(1<<(j%8))));
 				
 				digitalWrite(_clockPin, HIGH);
 				digitalWrite(_clockPin, LOW);
@@ -128,9 +156,9 @@ void shiftReg::chaser(int channels, int speed)
 			else
 			{
 				if(_mode)
-					digitalWrite(_dataPin, !!((val<<i) & (1 << (channels - j))));
+					digitalWrite(_dataPin, !!((val<<i) & (1 << ((channels - j)%8))));
 				else
-					digitalWrite(_dataPin, !((val<<i) & (1 << (channels - j))));
+					digitalWrite(_dataPin, !((val<<i) & (1 << ((channels - j)%8))));
 				digitalWrite(_clockPin, HIGH);
 				digitalWrite(_clockPin, LOW);
 			}
