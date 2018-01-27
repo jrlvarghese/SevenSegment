@@ -4,8 +4,8 @@
 #include "Arduino.h"
 #include "shiftReg.h"
 #include "HardwareSerial.h"
-#define CC 1
-#define CA 0
+#define CC 1	//set the default value for common cathode mode as 1
+#define CA 0	//also set the default value for common anode mode as 0
 //Constructor --> if the pins are not defined while initiating it will be the default pins
 shiftReg::shiftReg()
 {
@@ -85,15 +85,15 @@ void shiftReg::dispInt(int num)
 			}
 			break;
 		case 2:
-			if(bitOrder == LSBFIRST)
+			if(_bitOrder == LSBFIRST)
 			{
-				bitOut_LSBF(numArr[0][num/10]);//First number
-				bitOut_LDBF(numArr[0][num%10]);//Second number
+				bitOut_LSBF(numArr[0][num/10]);//First digit
+				bitOut_LSBF(numArr[0][num%10]);//Second digit
 			}
 			else
 			{
-				bitOut_MSBF(numArr[1][num/10]);
-				bitOut_MSBF(numArr[1][num%10]);
+				bitOut_MSBF(numArr[1][num/10]);	//First digit
+				bitOut_MSBF(numArr[1][num%10]);	//Second digit
 			}
 	}
 	digitalWrite(_latchPin, HIGH);//Enable the latchPin once all the numbers have been wrote
@@ -129,7 +129,6 @@ void shiftReg::bitOut_MSBF(int val)
         digitalWrite(_clockPin, HIGH);
         digitalWrite(_clockPin, LOW);        
     }
-	digitalWrite(_latchPin, HIGH);
 }
 /*Chaser which can move one bit from one end to another.
 Will make the bits move from one end to another and again start from the begining
@@ -137,10 +136,11 @@ Takes input as total number of channels depending on the number of channels requ
 void shiftReg::chaser(int channels, int speed)
 {
 	uint8_t val = 1;
+	uint8_t totalBit = 8*_srNum;//Total bit is calculated based on the total number of shift registers
 	for(uint8_t i = 0; i<channels; i++) 
 	{
 		digitalWrite(_latchPin, LOW);
-		for(uint8_t j=0; j<(8*_srNum); j++)
+		for(uint8_t j=0; j<totalBit; j++)
 		{
 			//cout<<!!(val&(1<<j))<<setw(7);
 			if(_bitOrder == LSBFIRST)
@@ -156,9 +156,9 @@ void shiftReg::chaser(int channels, int speed)
 			else
 			{
 				if(_mode)
-					digitalWrite(_dataPin, !!((val<<i) & (1 << ((channels - j)%8))));
+					digitalWrite(_dataPin, !!((val<<i) & (1<<(((totalBit-1)-j)%8))));
 				else
-					digitalWrite(_dataPin, !((val<<i) & (1 << ((channels - j)%8))));
+					digitalWrite(_dataPin, !((val<<i) & (1<<(((totalBit-1)- j)%8))));
 				digitalWrite(_clockPin, HIGH);
 				digitalWrite(_clockPin, LOW);
 			}
