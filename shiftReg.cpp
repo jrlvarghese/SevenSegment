@@ -58,9 +58,10 @@ void shiftReg::dispInt(int num)
 {
 	/*An array to store the values for the display. 
 	Inorder to get CommAnode mode  255 - CommCathode*/
-	int numArr[2][10] = {{252,96,218,242,102,182,190,224,254,246},//LSBFIRST CommCathode
+	uint8_t numArr[2][10] = {{252,96,218,242,102,182,190,224,254,246},//LSBFIRST CommCathode
 							{63,6,91,79,102,109,125,7,127,111}};//MSBFIRST CommCathode*/
 	uint8_t digit = 1;//sets the value of digit to either of these values
+	//Check how many digits are present
 	if(num<10)
 		digit = 1;
 	else if(num<100)
@@ -102,10 +103,9 @@ void shiftReg::dispInt(int num)
 
 /*bitOut_LSBF outputs the bits in an order of LSBFIRST
 takes input and convert to 8 bit binary. Then outputs bit by bit*/
-void shiftReg::bitOut_LSBF(int val)
+void shiftReg::bitOut_LSBF(uint8_t val)
 {
     uint8_t i;
-	digitalWrite(_latchPin, LOW);
     for(i=0; i<8; i++)
 	{
 		if(_mode)
@@ -117,7 +117,7 @@ void shiftReg::bitOut_LSBF(int val)
     }
 }
 
-void shiftReg::bitOut_MSBF(int val)
+void shiftReg::bitOut_MSBF(uint8_t val)
 {
     uint8_t i;
     for(i=0; i<8; i++)
@@ -166,6 +166,50 @@ void shiftReg::chaser(int channels, int speed)
 		digitalWrite(_latchPin, HIGH);
 		delay(speed);
 	}	
+}
+/*Function to display strings. Takes in pointer to the array of character
+Input string must contain an end of line character '\n'
+Please ensure that the input string is in small letters*/
+void shiftReg::dispString(char *ptr)
+{
+	//Array to numerically represent characters from A to Z. 
+	//First row contains values for LSBFIRST and second row contains values for MSBFIRST
+	//Letters that cannot be displayed in 7 segment are k, m, q, w, x, z
+	//These letters are replaced with 0 
+	//							   a, b,  c, d,  e,  f, g,  h,  i,  j, k, l, m,n, o, p, q,r, s,  t  u,  v,w,x, y, z
+	uint8_t charNumArr[2][26] = {{238,62,156,122,158,142,188,110,12,120,0,28,0,42,58,206,0,14,182,30,124,0,0,0,118,0},
+							  {119,124,57,94,121,113,61,118,48,30,0,56,0,84,92,115,0,112,109,120,62,0,0,0,110,0}}; 
+	digitalWrite(_latchPin, HIGH);	//make latchPin low so that the bits are transfered
+	for(uint8_t i=0; i<100; i++)
+	{
+		if(*(ptr + i)=='\n')	//once the char reaches end of line exit the loop
+			break;
+		if(_bitOrder == LSBFIRST)
+			bitOut_LSBF(charNumArr[0][*(ptr+i)-97]);	//output is fed from LSBFIRST array
+		else
+			bitOut_MSBF(charNumArr[1][*(ptr+i)-97]);	//From MSBFIRST array
+	}
+	digitalWrite(_latchPin, LOW);	//pullup latchpin to high inorder to ouptut the bits
+	
+}
+
+/*Function to display characters. Input will be a character*/
+void shiftReg::dispChar(uint8_t input)
+{
+	//Array to numerically represent characters from A to Z. 
+	//First row contains values for LSBFIRST and second row contains values for MSBFIRST
+	//Letters that cannot be displayed in 7 segment are k, m, q, w, x, z
+	//These letters are replaced with 0 
+	//							   a, b,  c, d,  e,  f, g,  h,  i,  j, k, l, m,n, o, p, q,r, s,  t  u,  v,w,x, y, z
+	uint8_t charNumArr[2][26] = {{238,62,156,122,158,142,188,110,12,120,0,28,0,42,58,206,0,14,182,30,124,0,0,0,118,0},
+							  {119,124,57,94,121,113,61,118,48,30,0,56,0,84,92,115,0,112,109,120,62,0,0,0,110,0}}; 
+	digitalWrite(_latchPin, LOW);	//keep latchpin low until the bits are passed
+	if(_bitOrder == LSBFIRST)
+			bitOut_LSBF(charNumArr[0][input-97]);	//output is fed from LSBFIRST array
+		else
+			bitOut_MSBF(charNumArr[1][input-97]);	//From MSBFIRST array
+	digitalWrite(_latchPin, HIGH);	//Make latchpin to high to output
+	
 }
 /*
 ------------------------- END OF THE PROGRAM ----------------------------------------

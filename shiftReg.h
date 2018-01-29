@@ -17,9 +17,11 @@ class shiftReg
 		void setReg(uint8_t srNum, uint8_t bitOrder);
 		void commonCathode();
 		void commonAnode();	//sets the register ouputs for a common anode display
-		void bitOut_MSBF(int val);	//Outputs the bits at the datapin
-		void bitOut_LSBF(int val);
+		void bitOut_MSBF(uint8_t val);	//Outputs the bits at the datapin
+		void bitOut_LSBF(uint8_t val);
 		void dispInt(int val);	//displays the integer values
+		void dispString(char *ptr);	//displays strings: string should end with '\n'
+		void dispChar(uint8_t input);	//displays characters from a to z
 		void chaser(int channels, int speed);	//channels is the number of channels
 		~shiftReg();	//default destructor for the class
 };
