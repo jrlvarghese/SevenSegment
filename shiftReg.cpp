@@ -2,12 +2,12 @@
 //#include <iostream>
 //using namespace std;
 #include "Arduino.h"
-#include "shiftReg.h"
+#include "ShiftReg.h"
 #include "HardwareSerial.h"
 #define CC 1	//set the default value for common cathode mode as 1
 #define CA 0	//also set the default value for common anode mode as 0
 //Constructor --> if the pins are not defined while initiating it will be the default pins
-shiftReg::shiftReg()
+ShiftReg::ShiftReg()
 {
 	_latchPin = 12;	//Connected to pin 12 of the ic (ST_CP)
 	_clockPin = 8;	//to pin 11 of ic (SH_CP)
@@ -18,13 +18,12 @@ shiftReg::shiftReg()
 }
 
 //Destructor 
-shiftReg::~shiftReg()
+ShiftReg::~ShiftReg()
 {
 	//do nothing
 }
-
 //Function to set the pins. This will change the default pins
-void shiftReg::setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
+void ShiftReg::setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
 {
 	//Pins are set hear
 	_latchPin = latchPin;
@@ -35,81 +34,49 @@ void shiftReg::setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
 	pinMode(_dataPin,OUTPUT);
 }
 
-/*Function to set total number of shift registers
-srNum -- indicates total number of shift registers
-mode -- define wether common cathode or anode
-bitOrder -- MSBFIRST OR LSBFIRST*/
-void shiftReg::setBitOrder(uint8_t bitOrder)
-{
-	_bitOrder = bitOrder;	//sets the bit order LSBFIRST OR MSBFIRST
-}
-
 /*Function to set total number of registers by default it is one*/
-void shiftReg::setTotalRegisters(uint8_t srNum)
+void ShiftReg::setTotalRegisters(uint8_t srNum)
 {
 	_srNum = srNum;	//sets total number of shift registers
 }
 
 /*Functions to set register mode wether common cathode or anode*/
-void shiftReg::commonCathode()
+void ShiftReg::commonCathode()
 {
 	_mode = CC;
 }
-void shiftReg::commonAnode()
+void ShiftReg::commonAnode()
 {
 	_mode = CA;
 }
-/*Function to display integer number -->it takes any integer value and displays*/
-void shiftReg::dispInt(int num)
+
+/*Function to set total number of shift registers
+srNum -- indicates total number of shift registers
+mode -- define wether common cathode or anode
+bitOrder -- MSBFIRST OR LSBFIRST*/
+void ShiftReg::setBITOrder(uint8_t bitOrder)
 {
-	/*An array to store the values for the display. 
-	Inorder to get CommAnode mode  255 - CommCathode*/
-	uint8_t numArr[2][10] = {{252,96,218,242,102,182,190,224,254,246},//LSBFIRST CommCathode
-							{63,6,91,79,102,109,125,7,127,111}};//MSBFIRST CommCathode*/
-	uint8_t digit = 1;//sets the value of digit to either of these values
-	//Check how many digits are present
-	if(num<10)
-		digit = 1;
-	else if(num<100)
-		digit = 2;
-	else if(num<1000)
-		digit = 3;
-	else if(num<10000)
-		digit = 4;
-	else if(num<100000)
-		digit = 5;
-	digitalWrite(_latchPin, LOW);	//Pull the latchpin to low for the bits to be write
-	switch(digit)
-	{
-		case 1:
-			if(_bitOrder == LSBFIRST)
-			{
-				bitOut_LSBF(numArr[0][num]);//Takes the value from the above mentioned array
-			}
-			else if(_bitOrder == MSBFIRST)
-			{
-				bitOut_MSBF(numArr[1][num]);
-			}
-			break;
-		case 2:
-			if(_bitOrder == LSBFIRST)
-			{
-				bitOut_LSBF(numArr[0][num/10]);//First digit
-				bitOut_LSBF(numArr[0][num%10]);//Second digit
-			}
-			else
-			{
-				bitOut_MSBF(numArr[1][num/10]);	//First digit
-				bitOut_MSBF(numArr[1][num%10]);	//Second digit
-			}
-	}
-	digitalWrite(_latchPin, HIGH);//Enable the latchPin once all the numbers have been wrote
-	
+	_bitOrder = bitOrder;	//sets the bit order LSBFIRST OR MSBFIRST
+}
+
+/*Function to get the pins*/
+void ShiftReg::getPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
+{
+	latchPin = _latchPin;
+	clockPin = _clockPin;
+	dataPin = _dataPin;
+}
+
+/*Function to get the mode(CommCathode or CommAnode) and  bit order*/
+void ShiftReg::getStatus(uint8_t mode, uint8_t bitOrder)
+{
+	mode = _mode;
+	bitOrder = _bitOrder;
 }
 
 /*bitOut_LSBF outputs the bits in an order of LSBFIRST
 takes input and convert to 8 bit binary. Then outputs bit by bit*/
-void shiftReg::bitOut_LSBF(uint8_t val)
+void ShiftReg::bitOut_LSBF(uint8_t val)
 {
     uint8_t i;
     for(i=0; i<8; i++)
@@ -123,7 +90,7 @@ void shiftReg::bitOut_LSBF(uint8_t val)
     }
 }
 
-void shiftReg::bitOut_MSBF(uint8_t val)
+void ShiftReg::bitOut_MSBF(uint8_t val)
 {
     uint8_t i;
     for(i=0; i<8; i++)
@@ -139,7 +106,7 @@ void shiftReg::bitOut_MSBF(uint8_t val)
 /*Chaser which can move one bit from one end to another.
 Will make the bits move from one end to another and again start from the begining
 Takes input as total number of channels depending on the number of channels required*/
-void shiftReg::chaser(int channels, int speed)
+void ShiftReg::chaser(int channels, int speed)
 {
 	uint8_t val = 1;
 	uint8_t totalBit = 8*_srNum;//Total bit is calculated based on the total number of shift registers
@@ -173,50 +140,7 @@ void shiftReg::chaser(int channels, int speed)
 		delay(speed);
 	}	
 }
-/*Function to display strings. Takes in pointer to the array of character
-Input string must contain an end of line character '\n'
-Please ensure that the input string is in small letters*/
-void shiftReg::dispString(char *ptr)
-{
-	//Array to numerically represent characters from A to Z. 
-	//First row contains values for LSBFIRST and second row contains values for MSBFIRST
-	//Letters that cannot be displayed in 7 segment are k, m, q, w, x, z
-	//These letters are replaced with 0 
-	//							   a, b,  c, d,  e,  f, g,  h,  i,  j, k, l, m,n, o, p, q,r, s,  t  u,  v,w,x, y, z
-	uint8_t charNumArr[2][26] = {{238,62,156,122,158,142,188,110,12,120,0,28,0,42,58,206,0,14,182,30,124,0,0,0,118,0},
-							  {119,124,57,94,121,113,61,118,48,30,0,56,0,84,92,115,0,112,109,120,62,0,0,0,110,0}}; 
-	digitalWrite(_latchPin, HIGH);	//make latchPin low so that the bits are transfered
-	for(uint8_t i=0; i<100; i++)
-	{
-		if(*(ptr + i)=='\n')	//once the char reaches end of line exit the loop
-			break;
-		if(_bitOrder == LSBFIRST)
-			bitOut_LSBF(charNumArr[0][*(ptr+i)-97]);	//output is fed from LSBFIRST array
-		else
-			bitOut_MSBF(charNumArr[1][*(ptr+i)-97]);	//From MSBFIRST array
-	}
-	digitalWrite(_latchPin, LOW);	//pullup latchpin to high inorder to ouptut the bits
-	
-}
 
-/*Function to display characters. Input will be a character*/
-void shiftReg::dispChar(uint8_t input)
-{
-	//Array to numerically represent characters from A to Z. 
-	//First row contains values for LSBFIRST and second row contains values for MSBFIRST
-	//Letters that cannot be displayed in 7 segment are k, m, q, w, x, z
-	//These letters are replaced with 0 
-	//							   a, b,  c, d,  e,  f, g,  h,  i,  j, k, l, m,n, o, p, q,r, s,  t  u,  v,w,x, y, z
-	uint8_t charNumArr[2][26] = {{238,62,156,122,158,142,188,110,12,120,0,28,0,42,58,206,0,14,182,30,124,0,0,0,118,0},
-							  {119,124,57,94,121,113,61,118,48,30,0,56,0,84,92,115,0,112,109,120,62,0,0,0,110,0}}; 
-	digitalWrite(_latchPin, LOW);	//keep latchpin low until the bits are passed
-	if(_bitOrder == LSBFIRST)
-			bitOut_LSBF(charNumArr[0][input-97]);	//output is fed from LSBFIRST array
-		else
-			bitOut_MSBF(charNumArr[1][input-97]);	//From MSBFIRST array
-	digitalWrite(_latchPin, HIGH);	//Make latchpin to high to output
-	
-}
 /*
 ------------------------- END OF THE PROGRAM ----------------------------------------
 //This is similar to default function in arduino:
