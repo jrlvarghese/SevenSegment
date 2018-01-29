@@ -14,7 +14,8 @@ class shiftReg
 	public:
 		shiftReg();	//default constructor
 		void setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin);
-		void setReg(uint8_t srNum, uint8_t bitOrder);
+		void setBitOrder(uint8_t bitOrder);
+		void setTotalRegisters(uint8_t srNum);	//Sets the total number of shift registers used
 		void commonCathode();
 		void commonAnode();	//sets the register ouputs for a common anode display
 		void bitOut_MSBF(uint8_t val);	//Outputs the bits at the datapin

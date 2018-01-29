@@ -39,11 +39,17 @@ void shiftReg::setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
 srNum -- indicates total number of shift registers
 mode -- define wether common cathode or anode
 bitOrder -- MSBFIRST OR LSBFIRST*/
-void shiftReg::setReg(uint8_t srNum, uint8_t bitOrder)
+void shiftReg::setBitOrder(uint8_t bitOrder)
 {
-	_srNum = srNum;	//sets total number of shift registers
 	_bitOrder = bitOrder;	//sets the bit order LSBFIRST OR MSBFIRST
 }
+
+/*Function to set total number of registers by default it is one*/
+void shiftReg::setTotalRegisters(uint8_t srNum)
+{
+	_srNum = srNum;	//sets total number of shift registers
+}
+
 /*Functions to set register mode wether common cathode or anode*/
 void shiftReg::commonCathode()
 {
