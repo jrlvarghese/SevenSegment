@@ -1,125 +1,147 @@
+//Make useful file to handle shift register 74HC595
+//#include <iostream>
+//using namespace std;
 #include "Arduino.h"
-#include "SevenSegment.h"
+#include "ShiftReg.h"
 #include "HardwareSerial.h"
-
-/*Default constructor for the SevenSegment class*/
-SevenSegment::SevenSegment()
+#define CC 1	//set the default value for common cathode mode as 1
+#define CA 0	//also set the default value for common anode mode as 0
+//Constructor --> if the pins are not defined while initiating it will be the default pins
+ShiftReg::ShiftReg()
 {
-	//nothing to specify
+	_latchPin = 12;	//Connected to pin 12 of the ic (ST_CP)
+	_clockPin = 8;	//to pin 11 of ic (SH_CP)
+	_dataPin = 11;	//to pin 14 of ic (DATA pin)
+	_srNum = 1;	//by default total number of sr is 1
+	_mode = CC;	//sets to common cathode mode by default
+	_bitOrder = MSBFIRST; //default bit order is MSBFIRST
 }
 
-/*Function to display integer number -->it takes any integer value and displays*/
-void SevenSegment::dispInt(int num)
+//Destructor 
+ShiftReg::~ShiftReg()
 {
-	/*An array to store the values for the display. 
-	Inorder to get CommAnode mode  255 - CommCathode*/
-	uint8_t numArr[2][10] = {{252,96,218,242,102,182,190,224,254,246},//LSBFIRST CommCathode
-							{63,6,91,79,102,109,125,7,127,111}};//MSBFIRST CommCathode*/
-	uint8_t digit = 1;//sets the value of digit to either of these values
-	//Check how many digits are present
-	if(num<10)
-		digit = 1;
-	else if(num<100)
-		digit = 2;
-	else if(num<1000)
-		digit = 3;
-	else if(num<10000)
-		digit = 4;
-	else if(num<100000)
-		digit = 5;
-	digitalWrite(_latchPin, LOW);	//Pull the latchpin to low for the bits to be write
-	switch(digit)
+	//do nothing
+}
+//Function to set the pins. This will change the default pins
+void ShiftReg::setPins(uint8_t latchPin, uint8_t clockPin, uint8_t dataPin)
+{
+	//Pins are set hear
+	_latchPin = latchPin;
+	_clockPin = clockPin;
+	_dataPin = dataPin;
+	pinMode(_latchPin,OUTPUT);
+	pinMode(_clockPin,OUTPUT);
+	pinMode(_dataPin,OUTPUT);
+}
+
+/*Function to set total number of registers by default it is one*/
+void ShiftReg::setTotalRegisters(uint8_t srNum)
+{
+	_srNum = srNum;	//sets total number of shift registers
+}
+
+/*Functions to set register mode wether common cathode or anode*/
+void ShiftReg::commonCathode()
+{
+	_mode = CC;
+}
+void ShiftReg::commonAnode()
+{
+	_mode = CA;
+}
+
+/*Function to set total number of shift registers
+srNum -- indicates total number of shift registers
+mode -- define wether common cathode or anode
+bitOrder -- MSBFIRST OR LSBFIRST*/
+void ShiftReg::setBITOrder(uint8_t bitOrder)
+{
+	_bitOrder = bitOrder;	//sets the bit order LSBFIRST OR MSBFIRST
+}
+
+/*bitOut_LSBF outputs the bits in an order of LSBFIRST
+takes input and convert to 8 bit binary. Then outputs bit by bit*/
+void ShiftReg::bitOut_LSBF(uint8_t val)
+{
+    uint8_t i;
+    for(i=0; i<8; i++)
 	{
-		case 1:
+		if(_mode)
+			digitalWrite(_dataPin, !!(val & (1 << i)));
+		else
+			digitalWrite(_dataPin, !(val & (1 << i)));			
+        digitalWrite(_clockPin, HIGH);
+        digitalWrite(_clockPin, LOW);        
+    }
+}
+
+void ShiftReg::bitOut_MSBF(uint8_t val)
+{
+    uint8_t i;
+    for(i=0; i<8; i++)
+	{
+		if(_mode)
+			digitalWrite(_dataPin, !!(val & (1 << (7 - i))));
+		else
+			digitalWrite(_dataPin, !(val & (1 << (7 - i))));
+        digitalWrite(_clockPin, HIGH);
+        digitalWrite(_clockPin, LOW);        
+    }
+}
+/*Chaser which can move one bit from one end to another.
+Will make the bits move from one end to another and again start from the begining
+Takes input as total number of channels depending on the number of channels required*/
+void ShiftReg::chaser(int channels, int speed)
+{
+	uint8_t val = 1;
+	uint8_t totalBit = 8*_srNum;//Total bit is calculated based on the total number of shift registers
+	for(uint8_t i = 0; i<channels; i++) 
+	{
+		digitalWrite(_latchPin, LOW);
+		for(uint8_t j=0; j<totalBit; j++)
+		{
+			//cout<<!!(val&(1<<j))<<setw(7);
 			if(_bitOrder == LSBFIRST)
 			{
-				bitOut_LSBF(numArr[0][num]);//Takes the value from the above mentioned array
-			}
-			else if(_bitOrder == MSBFIRST)
-			{
-				bitOut_MSBF(numArr[1][num]);
-			}
-			break;
-		case 2:
-			if(_bitOrder == LSBFIRST)
-			{
-				bitOut_LSBF(numArr[0][num/10]);//First digit
-				bitOut_LSBF(numArr[0][num%10]);//Second digit
+				if(_mode)
+					digitalWrite(_dataPin, !!((val<<i)&(1<<(j%8))));
+				else
+					digitalWrite(_dataPin, !((val<<i)&(1<<(j%8))));
+				
+				digitalWrite(_clockPin, HIGH);
+				digitalWrite(_clockPin, LOW);
 			}
 			else
 			{
-				bitOut_MSBF(numArr[1][num/10]);	//First digit
-				bitOut_MSBF(numArr[1][num%10]);	//Second digit
+				if(_mode)
+					digitalWrite(_dataPin, !!((val<<i) & (1<<(((totalBit-1)-j)%8))));
+				else
+					digitalWrite(_dataPin, !((val<<i) & (1<<(((totalBit-1)- j)%8))));
+				digitalWrite(_clockPin, HIGH);
+				digitalWrite(_clockPin, LOW);
 			}
-		case 3:
-			if(_bitOrder == LSBFIRST)
-			{
-				bitOut_LSBF(numArr[0][num/100]);	//First digit
-				num /=10;
-				bitOut_LSBF(numArr[0][num/10]);		//Second digit
-				bitOut_LSBF(numArr[0][num%10]);		//Third digit
-			}else
-			{
-				bitOut_LSBF(numArr[1][num/100]);	//First digit
-				num /=10;
-				bitOut_LSBF(numArr[1][num/10]);		//Second digit
-				bitOut_LSBF(numArr[1][num%10]);		//Third digit
-			}
-	}
-	digitalWrite(_latchPin, HIGH);//Enable the latchPin once all the numbers have been wrote
-	
-}
-/*Function to display strings. Takes in pointer to the array of character
-Input string must contain an end of line character '\n'
-Please ensure that the input string is in small letters*/
-void SevenSegment::dispString(char *ptr)
-{
-	//Array to numerically represent characters from A to Z. 
-	//First row contains values for LSBFIRST and second row contains values for MSBFIRST
-	//Letters that cannot be displayed in 7 segment are k, m, q, w, x, z
-	//These letters are replaced with 0 
-	//							   a, b,  c, d,  e,  f, g,  h,  i,  j, k, l, m,n, o, p, q,r, s,  t  u,  v,w,x, y, z
-	uint8_t charNumArr[2][26] = {{238,62,156,122,158,142,188,110,12,120,0,28,0,42,58,206,0,14,182,30,124,0,0,0,118,0},
-							  {119,124,57,94,121,113,61,118,48,30,0,56,0,84,92,115,0,112,109,120,62,0,0,0,110,0}}; 
-	digitalWrite(_latchPin, HIGH);	//make latchPin low so that the bits are transfered
-	for(uint8_t i=0; i<100; i++)
-	{
-		if(*(ptr + i)=='\n')	//once the char reaches end of line exit the loop
-			break;
-		if(_bitOrder == LSBFIRST)
-		{
-			if(*(ptr+i)>=97)	//If the given input is small letter
-				bitOut_LSBF(charNumArr[0][*(ptr+i)-97]);	//output is fed from LSBFIRST array
-			else	//If the given input is capital letter
-				bitOut_LSBF(charNumArr[0][*(ptr+i)-65])
 		}
-		else
-		{
-			if(*(ptr+i)>=97)	//if given input is small letter
-				bitOut_MSBF(charNumArr[1][*(ptr+i)-97]);	//From MSBFIRST array
-			else	//If given input is capital letter
-				bitOut_MSBF(charNumArr[1][*(ptr+i)-65]);
-		}
-	}
-	digitalWrite(_latchPin, LOW);	//pullup latchpin to high inorder to ouptut the bits
-	
+		digitalWrite(_latchPin, HIGH);
+		delay(speed);
+	}	
 }
 
-/*Function to display characters. Input will be a character*/
-void SevenSegment::dispChar(uint8_t input)
+/*
+------------------------- END OF THE PROGRAM ----------------------------------------
+//This is similar to default function in arduino:
+//Please note default function name is shiftout
+void shiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, uint8_t val)
 {
-	//Array to numerically represent characters from A to Z. 
-	//First row contains values for LSBFIRST and second row contains values for MSBFIRST
-	//Letters that cannot be displayed in 7 segment are k, m, q, w, x, z
-	//These letters are replaced with 0 
-	//							   a, b,  c, d,  e,  f, g,  h,  i,  j, k, l, m,n, o, p, q,r, s,  t  u,  v,w,x, y, z
-	uint8_t charNumArr[2][26] = {{238,62,156,122,158,142,188,110,12,120,0,28,0,42,58,206,0,14,182,30,124,0,0,0,118,0},
-							  {119,124,57,94,121,113,61,118,48,30,0,56,0,84,92,115,0,112,109,120,62,0,0,0,110,0}}; 
-	digitalWrite(_latchPin, LOW);	//keep latchpin low until the bits are passed
-	if(_bitOrder == LSBFIRST)
-			bitOut_LSBF(charNumArr[0][input-97]);	//output is fed from LSBFIRST array
-		else
-			bitOut_MSBF(charNumArr[1][input-97]);	//From MSBFIRST array
-	digitalWrite(_latchPin, HIGH);	//Make latchpin to high to output
-	
+    uint8_t i;
+
+    for (i = 0; i < 8; i++)  {
+        if (bitOrder == LSBFIRST)
+            digitalWrite(dataPin, !!(val & (1 << i)));
+        else    
+            digitalWrite(dataPin, !!(val & (1 << (7 - i))));
+
+        digitalWrite(clockPin, HIGH);
+        digitalWrite(clockPin, LOW);        
+    }
 }
+*/

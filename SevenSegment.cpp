@@ -5,13 +5,13 @@
 /*Default constructor for the SevenSegment class*/
 SevenSegment::SevenSegment()
 {
-	/*_latchPin = 12;	//Connected to pin 12 of the ic (ST_CP)
-	_clockPin = 8;	//to pin 11 of ic (SH_CP)
-	_dataPin = 11;	//to pin 14 of ic (DATA pin)
-	_mode = CC;	//sets to common cathode mode by default
-	_bitOrder = MSBFIRST; //default bit order is MSBFIRST*/
-	getPins(_latchPin, _clockPin, _dataPin);
-	getStatus(_mode, _bitOrder);
+	//nothing to specify
+}
+
+/*Destructor for the class SevenSegment*/
+SevenSegment::~SevenSegment()
+{
+	//nothing to do
 }
 
 /*Function to display integer number -->it takes any integer value and displays*/
@@ -93,9 +93,19 @@ void SevenSegment::dispString(char *ptr)
 		if(*(ptr + i)=='\n')	//once the char reaches end of line exit the loop
 			break;
 		if(_bitOrder == LSBFIRST)
-			bitOut_LSBF(charNumArr[0][*(ptr+i)-97]);	//output is fed from LSBFIRST array
+		{
+			if(*(ptr+i)>=97)	//If the given input is small letter
+				bitOut_LSBF(charNumArr[0][*(ptr+i)-97]);	//output is fed from LSBFIRST array
+			else	//If the given input is capital letter
+				bitOut_LSBF(charNumArr[0][*(ptr+i)-65])
+		}
 		else
-			bitOut_MSBF(charNumArr[1][*(ptr+i)-97]);	//From MSBFIRST array
+		{
+			if(*(ptr+i)>=97)	//if given input is small letter
+				bitOut_MSBF(charNumArr[1][*(ptr+i)-97]);	//From MSBFIRST array
+			else	//If given input is capital letter
+				bitOut_MSBF(charNumArr[1][*(ptr+i)-65]);
+		}
 	}
 	digitalWrite(_latchPin, LOW);	//pullup latchpin to high inorder to ouptut the bits
 	
@@ -113,9 +123,19 @@ void SevenSegment::dispChar(uint8_t input)
 							  {119,124,57,94,121,113,61,118,48,30,0,56,0,84,92,115,0,112,109,120,62,0,0,0,110,0}}; 
 	digitalWrite(_latchPin, LOW);	//keep latchpin low until the bits are passed
 	if(_bitOrder == LSBFIRST)
-			bitOut_LSBF(charNumArr[0][input-97]);	//output is fed from LSBFIRST array
-		else
+	{
+		if(input>=97)
+				bitOut_LSBF(charNumArr[0][input-97]);	//output is fed from LSBFIRST array
+			else
+				bitOut_LSBF(charNumArr[0][input-65]);
+	}
+	else
+	{
+		if(input>=97)
 			bitOut_MSBF(charNumArr[1][input-97]);	//From MSBFIRST array
+		else
+			bitOut_MSBF(charNumArr[1][input-65]);
+	}
 	digitalWrite(_latchPin, HIGH);	//Make latchpin to high to output
 	
 }
