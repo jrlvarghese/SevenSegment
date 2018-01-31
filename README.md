@@ -1,3 +1,6 @@
+THIS A ARDUINO LIBRARY FOR CONTROLLING SEVENSEGMENT DISPLAY
+
+
 Contains two classes
 1. ShiftReg
 2. SevenSegment
